@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": false,
+    "removeComments": true,
+    "esModuleInterop": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "es2017",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": ".",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": false,
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@Configs/*": ["src/configs/*"],
+      "@Db/*": ["src/db/*"],
+      "@Decorators/*": ["src/decorators/*"],
+      "@Dtos/*": ["src/dtos/*"],
+      "@Guards/*": ["src/guards/*"],
+      "@Helpers/*": ["src/helpers/*"],
+      "@Interfaces/*": ["src/interfaces/*"],
+      "@Modules/*": ["src/modules/*"],
+      "@Exceptions/*": ["src/exceptions/*"],
+      "@Validators/*": ["src/validators/*"],
+      "@/*": ["src/*"]
+    }
+  }
+}
