@@ -4,9 +4,13 @@ import { IPagination } from '@Interfaces/i-pagination.interface';
 
 export interface ICrudRepository<Entity> {
   findById(id: number, ...args: any[]): Promise<Entity>;
-  findOneBy(entity: Partial<Entity>, ...args: any[]);
-  findBy(entity: Partial<Entity>, ...args: any[]);
+  findOneBy(entity: Partial<Entity>, ...args: any[]): Promise<Entity>;
+  findBy(entity: Partial<Entity>, ...args: any[]): Promise<Entity[]>;
   findAll(
+    pagination: IPagination,
+    ...args: any[]
+  ): Promise<IPaginatedResult<Entity>>;
+  findAllDeleted(
     pagination: IPagination,
     ...args: any[]
   ): Promise<IPaginatedResult<Entity>>;
@@ -17,4 +21,5 @@ export interface ICrudRepository<Entity> {
     ...args: any[]
   ): Promise<Entity>;
   softDelete(id: number, ...args: any[]): Promise<void>;
+  restore(id: number, ...args: any[]): Promise<void>;
 }

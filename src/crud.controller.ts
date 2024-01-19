@@ -1,9 +1,11 @@
+import { CrudAutoModule } from '@/crud-auto.module';
 import { ICrudService } from '@/crud.service';
-import { UnauthorizedDto } from '@/dtos/errors.dto';
 import { PaginationDto } from '@/dtos/pagination.dto';
+import { InjectUpdateIdInterceptor } from '@/update-id.interceptor';
 import { ClassName } from '@Decorators/class-name.decorator';
 import { InjectCrudService } from '@Decorators/inject-crud-service.decorator';
 import { Optional } from '@Decorators/optional.decorator';
+import { UnauthorizedDto } from '@Dtos/errors.dto';
 import { DeepPartial } from '@Helpers/mapped-types/deep-partial.interface';
 import { IDtoRecipe } from '@Interfaces/i-dto-recipe.interface';
 import { IEndpointsRecipe } from '@Interfaces/i-endpoints-recipe.interface';
@@ -18,13 +20,14 @@ import {
   Put,
   Query,
   Type,
+  UseInterceptors,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiBody, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { capitalCase, paramCase } from 'change-case';
 
-export function crudControllerFor<
+export const crudControllerFor = <
   Entity,
   CreateDto = any,
   UpdateDto extends DeepPartial<Entity> = any,
@@ -40,19 +43,16 @@ export function crudControllerFor<
 >(
   target: Type<Entity>,
   {
-    createDto,
-    updateDto,
-    returnDto,
-    paginatedResultDto,
-  }: IDtoRecipe<CreateDto, UpdateDto, ReturnDto, PaginatedResultDto>,
-  {
     create = true,
     findAll = true,
     findById = true,
     update = true,
     delete: _delete = true,
   }: IEndpointsRecipe = {},
-) {
+) => {
+  const targetDtoRecipe: IDtoRecipe<UpdateDto, ReturnDto, PaginatedResultDto> =
+    CrudAutoModule.dtosFor(target);
+
   @ApiResponse({
     status: 401,
     description: 'Unauthorized',
@@ -62,13 +62,24 @@ export function crudControllerFor<
   @Controller(paramCase(target.name))
   @ClassName(`${capitalCase(target.name)}Controller`)
   class BaseController {
+    public static readonly dtoRecipe = targetDtoRecipe;
+
     @InjectCrudService(target)
     readonly crudService: Service;
 
     @Optional(Post(), create)
-    @ApiBody({ type: createDto, required: true })
-    @ApiResponse({ type: createDto, status: 201, description: 'Created' })
-    @UsePipes(new ValidationPipe({ expectedType: createDto, transform: true }))
+    @ApiBody({ type: targetDtoRecipe.createDto, required: true })
+    @ApiResponse({
+      type: targetDtoRecipe.createDto,
+      status: 201,
+      description: 'Created',
+    })
+    @UsePipes(
+      new ValidationPipe({
+        expectedType: targetDtoRecipe.createDto,
+        transform: true,
+      }),
+    )
     async create(
       @Body()
       modelDto: CreateDto,
@@ -78,7 +89,7 @@ export function crudControllerFor<
 
     @Optional(Get(), findAll)
     @ApiResponse({
-      type: paginatedResultDto,
+      type: targetDtoRecipe.paginatedResultDto,
       status: 200,
       description: 'Found',
     })
@@ -89,15 +100,29 @@ export function crudControllerFor<
     }
 
     @Optional(Get(':id'), findById)
-    @ApiResponse({ type: returnDto, status: 200, description: 'Found' })
+    @ApiResponse({
+      type: targetDtoRecipe.returnDto,
+      status: 200,
+      description: 'Found',
+    })
     async findById(@Param('id') id: number): Promise<ReturnDto> {
       return await this.crudService.findById(id);
     }
 
     @Optional(Put(':id'), update)
-    @ApiBody({ type: updateDto, required: true })
-    @ApiResponse({ type: returnDto, status: 200, description: 'Updated' })
-    @UsePipes(new ValidationPipe({ expectedType: updateDto, transform: true }))
+    @ApiBody({ type: targetDtoRecipe.updateDto, required: true })
+    @ApiResponse({
+      type: targetDtoRecipe.returnDto,
+      status: 200,
+      description: 'Updated',
+    })
+    @UseInterceptors(new InjectUpdateIdInterceptor())
+    @UsePipes(
+      new ValidationPipe({
+        expectedType: targetDtoRecipe.updateDto,
+        transform: true,
+      }),
+    )
     async update(
       @Param('id') id: number,
       @Body() updateDto: UpdateDto,
@@ -111,4 +136,4 @@ export function crudControllerFor<
     }
   }
   return BaseController;
-}
+};

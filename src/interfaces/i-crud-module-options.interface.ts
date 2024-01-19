@@ -5,21 +5,38 @@ export const CRUD_MODULE = 'CRUD_MODULE';
 export enum ApiLayers {
   NONE = 0,
   REST = 1,
+  GRAPHQL = 2,
+  ALL = 3,
 }
 
-export interface IAutoCrudOptions {
+export interface IAutoCrudOptions<
+  EndpointsRecipe extends IEndpointsRecipe = IEndpointsRecipe,
+> {
   apiLayer?: ApiLayers;
-  endpointsRecipe?: IEndpointsRecipe;
+  endpointsRecipe?: EndpointsRecipe;
 }
 
-export interface IEntityAutoCrudOptions extends IAutoCrudOptions {
+export interface IEntityAutoCrudOptions<
+  EndpointsRecipe extends IEndpointsRecipe = IEndpointsRecipe,
+> extends IAutoCrudOptions<EndpointsRecipe> {
   entity: Type<any>;
 }
-export const isEntityAutoModuleOptions = (
+export const isEntityAutoModuleOptions = <
+  EndpointsRecipe extends IEndpointsRecipe = IEndpointsRecipe,
+>(
   obj: any,
-): obj is IEntityAutoCrudOptions => {
+): obj is IEntityAutoCrudOptions<EndpointsRecipe> => {
   return obj && obj.entity;
 };
-export interface ICrudModuleOptions extends ModuleMetadata, IAutoCrudOptions {
-  entities: (Type<any> | IEntityAutoCrudOptions)[];
+export interface ICrudModuleOptions<
+  EndpointsRecipe extends IEndpointsRecipe = IEndpointsRecipe,
+> extends ModuleMetadata,
+    IAutoCrudOptions<EndpointsRecipe> {
+  entities: (Type<any> | IEntityAutoCrudOptions<EndpointsRecipe>)[];
+}
+
+export interface ICrudAutoModuleForFeatureOptions<
+  EndpointsRecipe extends IEndpointsRecipe = IEndpointsRecipe,
+> extends ICrudModuleOptions<EndpointsRecipe> {
+  moduleRef: Type<any>;
 }

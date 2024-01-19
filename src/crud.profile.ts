@@ -1,3 +1,4 @@
+import { CrudAutoModule } from '@/crud-auto.module';
 import { createMap, Mapper } from '@automapper/core';
 import { AutomapperProfile, InjectMapper } from '@automapper/nestjs';
 import { ClassName } from '@Decorators/class-name.decorator';
@@ -7,8 +8,8 @@ import { capitalCase } from 'change-case';
 
 export function crudProfileFor<Entity>(
   target: Type<Entity>,
-  { createDto, returnDto }: IDtoRecipe,
 ): Type<AutomapperProfile> {
+  const { createDto, returnDto }: IDtoRecipe = CrudAutoModule.dtosFor(target);
   @Injectable()
   @ClassName(`${capitalCase(target.name)}Profile`)
   class CrudProfile extends AutomapperProfile {

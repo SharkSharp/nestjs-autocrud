@@ -28,7 +28,9 @@ export class CrudAutoloader {
     this.autoload(
       dtoFiles,
       (autoloaded, metadata) => {
-        loadedDtos[metadata.target.name] = new DtoRecipe(metadata.target);
+        if (!loadedDtos[metadata.target.name]) {
+          loadedDtos[metadata.target.name] = new DtoRecipe(metadata.target);
+        }
         loadedDtos[metadata.target.name][metadata.prop] = autoloaded;
       },
       CRUD_DTO_RECIPE,
@@ -48,7 +50,9 @@ export class CrudAutoloader {
     this.autoload(
       recipeFiles,
       (autoloaded, metadata) => {
-        loadedRecipes[metadata.target.name] = {};
+        if (!loadedRecipes[metadata.target.name]) {
+          loadedRecipes[metadata.target.name] = {};
+        }
         loadedRecipes[metadata.target.name][metadata.prop] = autoloaded;
       },
       CRUD_ENTITY_RECIPE,
