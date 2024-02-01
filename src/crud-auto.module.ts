@@ -66,21 +66,13 @@ export class CrudAutoModule {
 
   public static dtosFor<
     Entity,
-    K extends string | number | symbol = 'id',
-    CreateDto = Omit<Entity, K>,
+    CreateDto = Omit<Entity, 'id'>,
     UpdateDto extends DeepPartial<Entity> = DeepPartial<Entity>,
     ReturnDto = Entity,
     PaginatedResultDto extends IPaginatedResult<ReturnDto> = IPaginatedResult<ReturnDto>,
   >(
     target: Type<Entity>,
-  ): IDtoRecipe<
-    Entity,
-    K,
-    CreateDto,
-    UpdateDto,
-    ReturnDto,
-    PaginatedResultDto
-  > {
+  ): IDtoRecipe<Entity, CreateDto, UpdateDto, ReturnDto, PaginatedResultDto> {
     if (!this.loadedDtos) {
       this.loadedDtos = CrudAutoloader.autoloadDtos();
     }
@@ -89,7 +81,6 @@ export class CrudAutoModule {
     }
     return this.loadedDtos[target.name] as IDtoRecipe<
       Entity,
-      K,
       CreateDto,
       UpdateDto,
       ReturnDto,

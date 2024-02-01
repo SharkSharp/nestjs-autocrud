@@ -14,8 +14,7 @@ import { capitalCase } from 'change-case';
 
 export interface ICrudService<
   Entity,
-  K extends string | number | symbol = 'id',
-  CreateDto = Omit<Entity, K>,
+  CreateDto = Omit<Entity, 'id'>,
   UpdateDto extends DeepPartial<Entity> = DeepPartial<Entity>,
   ReturnDto = Entity,
   PaginatedResultDto extends IPaginatedResult<ReturnDto> = IPaginatedResult<ReturnDto>,
@@ -29,9 +28,8 @@ export interface ICrudService<
 
 export const crudServiceFor = <
   Entity,
-  K extends string | number | symbol = 'id',
   TRepository extends ICrudRepository<Entity> = ICrudRepository<Entity>,
-  CreateDto = Omit<Entity, K>,
+  CreateDto = Omit<Entity, 'id'>,
   UpdateDto extends DeepPartial<Entity> = DeepPartial<Entity>,
   ReturnDto = Entity,
   PaginatedResultDto extends IPaginatedResult<ReturnDto> = IPaginatedResult<ReturnDto>,
@@ -40,7 +38,6 @@ export const crudServiceFor = <
 ) => {
   const targetDtoRecipe: IDtoRecipe<
     Entity,
-    K,
     CreateDto,
     UpdateDto,
     ReturnDto,
@@ -51,14 +48,7 @@ export const crudServiceFor = <
   @ClassName(`${capitalCase(target.name)}Service`)
   class BaseService
     implements
-      ICrudService<
-        Entity,
-        K,
-        CreateDto,
-        UpdateDto,
-        ReturnDto,
-        PaginatedResultDto
-      >
+      ICrudService<Entity, CreateDto, UpdateDto, ReturnDto, PaginatedResultDto>
   {
     public static readonly dtoRecipe = targetDtoRecipe;
 

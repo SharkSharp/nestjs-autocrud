@@ -29,26 +29,17 @@ import { capitalCase, paramCase } from 'change-case';
 
 export const crudControllerFor = <
   Entity,
-  K extends string | number | symbol = 'id',
-  CreateDto = Omit<Entity, K>,
+  CreateDto = Omit<Entity, 'id'>,
   UpdateDto extends DeepPartial<Entity> = DeepPartial<Entity>,
   ReturnDto = Entity,
   PaginatedResultDto extends IPaginatedResult<ReturnDto> = IPaginatedResult<ReturnDto>,
   Service extends ICrudService<
     Entity,
-    K,
     CreateDto,
     UpdateDto,
     ReturnDto,
     PaginatedResultDto
-  > = ICrudService<
-    Entity,
-    K,
-    CreateDto,
-    UpdateDto,
-    ReturnDto,
-    PaginatedResultDto
-  >,
+  > = ICrudService<Entity, CreateDto, UpdateDto, ReturnDto, PaginatedResultDto>,
 >(
   target: Type<Entity>,
   {
@@ -61,7 +52,6 @@ export const crudControllerFor = <
 ) => {
   const targetDtoRecipe: IDtoRecipe<
     Entity,
-    K,
     CreateDto,
     UpdateDto,
     ReturnDto,

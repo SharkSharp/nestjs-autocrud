@@ -6,15 +6,13 @@ import { SetMetadata, Type } from '@nestjs/common';
 export const CRUD_DTO_RECIPE = 'CRUD_DTO_RECIPE';
 export interface IDtoRecipeMetadata<
   Entity,
-  K extends string | number | symbol = 'id',
-  CreateDto = Omit<Entity, K>,
+  CreateDto = Omit<Entity, 'id'>,
   UpdateDto extends DeepPartial<Entity> = DeepPartial<Entity>,
   ReturnDto = Entity,
   PaginatedResultDto = IPaginatedResult<ReturnDto>,
 > extends IRecipeMetadata<Entity> {
   prop: keyof IDtoRecipe<
     Entity,
-    K,
     CreateDto,
     UpdateDto,
     ReturnDto,
@@ -31,8 +29,7 @@ export const SetDtoRecipeMetadata = <Entity>(
   });
 export interface IDtoRecipe<
   Entity,
-  K extends string | number | symbol = 'id',
-  CreateDto = Omit<Entity, K>,
+  CreateDto = Omit<Entity, 'id'>,
   UpdateDto extends DeepPartial<Entity> = DeepPartial<Entity>,
   ReturnDto = Entity,
   PaginatedResultDto = IPaginatedResult<ReturnDto>,
