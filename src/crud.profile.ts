@@ -9,7 +9,8 @@ import { capitalCase } from 'change-case';
 export function crudProfileFor<Entity>(
   target: Type<Entity>,
 ): Type<AutomapperProfile> {
-  const { createDto, returnDto }: IDtoRecipe = CrudAutoModule.dtosFor(target);
+  const { createDto, returnDto }: IDtoRecipe<Entity> =
+    CrudAutoModule.dtosFor(target);
   @Injectable()
   @ClassName(`${capitalCase(target.name)}Profile`)
   class CrudProfile extends AutomapperProfile {

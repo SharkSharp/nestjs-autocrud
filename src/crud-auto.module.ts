@@ -6,6 +6,7 @@ import { DtoRecipe } from '@/dto-recipe.class';
 import { MODULE_REF } from '@Decorators/crud-module.decorator';
 import { crudRepositoryNameFor } from '@Decorators/inject-crud-repository.decorator';
 import { crudServiceNameFor } from '@Decorators/inject-crud-service.decorator';
+import { DeepPartial } from '@Helpers/mapped-types';
 import { ICrudAutoModuleOptions } from '@Interfaces/i-crud-auto-module-options.interface';
 import {
   ApiLayers,
@@ -17,12 +18,13 @@ import { IDictionary } from '@Interfaces/i-dictionary.interface';
 import { IDtoRecipe } from '@Interfaces/i-dto-recipe.interface';
 import { IEndpointsRecipe } from '@Interfaces/i-endpoints-recipe.interface';
 import { IEntityRecipe } from '@Interfaces/i-entity-recipe.interface';
+import { IPaginatedResult } from '@Interfaces/i-paginated-result.interface';
 import { DynamicModule, Module, Type } from '@nestjs/common';
 
 @Module({})
 export class CrudAutoModule {
-  private static loadedDtos: IDictionary<IDtoRecipe>;
-  private static loadedRecipes: IDictionary<IEntityRecipe>;
+  private static loadedDtos: IDictionary<IDtoRecipe<unknown>>;
+  private static loadedRecipes: IDictionary<IEntityRecipe<unknown>>;
   private static moduleOptions: Promise<ICrudAutoModuleOptions> =
     new Promise<ICrudAutoModuleOptions>(
       (resolve) =>
@@ -62,24 +64,47 @@ export class CrudAutoModule {
     }
   }
 
-  public static dtosFor(target: Type<any>): IDtoRecipe {
+  public static dtosFor<
+    Entity,
+    K extends string | number | symbol = 'id',
+    CreateDto = Omit<Entity, K>,
+    UpdateDto extends DeepPartial<Entity> = DeepPartial<Entity>,
+    ReturnDto = Entity,
+    PaginatedResultDto extends IPaginatedResult<ReturnDto> = IPaginatedResult<ReturnDto>,
+  >(
+    target: Type<Entity>,
+  ): IDtoRecipe<
+    Entity,
+    K,
+    CreateDto,
+    UpdateDto,
+    ReturnDto,
+    PaginatedResultDto
+  > {
     if (!this.loadedDtos) {
       this.loadedDtos = CrudAutoloader.autoloadDtos();
     }
     if (!(target.name in this.loadedDtos)) {
       this.loadedDtos[target.name] = new DtoRecipe(target);
     }
-    return this.loadedDtos[target.name];
+    return this.loadedDtos[target.name] as IDtoRecipe<
+      Entity,
+      K,
+      CreateDto,
+      UpdateDto,
+      ReturnDto,
+      PaginatedResultDto
+    >;
   }
 
-  public static recipeFor(target: Type<any>): IEntityRecipe {
+  public static recipeFor<Entity>(target: Type<Entity>): IEntityRecipe<Entity> {
     if (!this.loadedRecipes) {
       this.loadedRecipes = CrudAutoloader.autoloadRecipes();
     }
     if (!(target.name in this.loadedRecipes)) {
       this.loadedRecipes[target.name] = {};
     }
-    return this.loadedRecipes[target.name];
+    return this.loadedRecipes[target.name] as IEntityRecipe<Entity>;
   }
 
   static async forFeatureAsync({
@@ -96,7 +121,7 @@ export class CrudAutoModule {
     const builtEntities = entities.map((entity) =>
       isEntityAutoModuleOptions(entity)
         ? entity
-        : <IEntityAutoCrudOptions>{
+        : <IEntityAutoCrudOptions<unknown>>{
             entity,
             apiLayer: apiLayer ?? currentOptions.apiLayer,
           },
@@ -145,7 +170,9 @@ export class CrudAutoModule {
     };
   }
 
-  private static async providersFor(targets: Array<IEntityAutoCrudOptions>) {
+  private static async providersFor(
+    targets: Array<IEntityAutoCrudOptions<unknown>>,
+  ) {
     return await Promise.all(
       targets.flatMap(({ entity }) => [
         this.repositoryFor(entity),
@@ -154,14 +181,16 @@ export class CrudAutoModule {
     );
   }
 
-  private static async profilesFor(targets: Array<IEntityAutoCrudOptions>) {
+  private static async profilesFor(
+    targets: Array<IEntityAutoCrudOptions<unknown>>,
+  ) {
     return await Promise.all(
       targets.map(({ entity }) => this.profileFor(entity)),
     );
   }
 
   private static async controllersFor(
-    targets: Array<IEntityAutoCrudOptions>,
+    targets: Array<IEntityAutoCrudOptions<unknown>>,
     moduleEndpointsRecipe: IEndpointsRecipe,
   ) {
     const currentOptions = await this.moduleOptions;
@@ -191,7 +220,7 @@ export class CrudAutoModule {
     );
   }
 
-  private static async repositoryFor<Entity>(target: Type<Entity>) {
+  private static async repositoryFor(target: Type<any>) {
     const currentOptions = await this.moduleOptions;
     const repositoryType =
       this.recipeFor(target)?.repository ??
@@ -203,7 +232,7 @@ export class CrudAutoModule {
     };
   }
 
-  private static async serviceFor<Entity>(target: Type<Entity>) {
+  private static async serviceFor(target: Type<any>) {
     const currentOptions = await this.moduleOptions;
     const serviceType =
       this.recipeFor(target)?.service ??
@@ -215,7 +244,7 @@ export class CrudAutoModule {
     };
   }
 
-  private static async profileFor<Entity>(target: Type<Entity>) {
+  private static async profileFor(target: Type<any>) {
     const currentOptions = await this.moduleOptions;
     const profileClass =
       this.recipeFor(target)?.mapperProfile ??

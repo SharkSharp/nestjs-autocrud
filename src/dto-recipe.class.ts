@@ -6,7 +6,7 @@ import {
 import { IDtoRecipe } from '@Interfaces/i-dto-recipe.interface';
 import { Type } from '@nestjs/common';
 
-export class DtoRecipe implements IDtoRecipe {
+export class DtoRecipe<Entity> implements IDtoRecipe<Entity> {
   constructor(private readonly target: Type<any>) {}
 
   private _createDto: Type<any>;

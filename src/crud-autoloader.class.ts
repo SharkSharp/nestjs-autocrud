@@ -5,10 +5,12 @@ import { IDictionary } from '@Interfaces/i-dictionary.interface';
 import {
   CRUD_DTO_RECIPE,
   IDtoRecipe,
+  IDtoRecipeMetadata,
 } from '@Interfaces/i-dto-recipe.interface';
 import {
   CRUD_ENTITY_RECIPE,
   IEntityRecipe,
+  IEntityRecipeMetadata,
 } from '@Interfaces/i-entity-recipe.interface';
 import { IRecipeMetadata } from '@Interfaces/i-recipe-metadata.interface';
 import { Logger, Type } from '@nestjs/common';
@@ -17,9 +19,9 @@ import path, { join } from 'path';
 const logger = new Logger('CrudAutoloader', { timestamp: true });
 
 export class CrudAutoloader {
-  public static autoloadDtos(): IDictionary<IDtoRecipe> {
+  public static autoloadDtos(): IDictionary<IDtoRecipe<unknown>> {
     logger.log('Starting Dtos Autoload');
-    const loadedDtos: IDictionary<IDtoRecipe> = {};
+    const loadedDtos: IDictionary<IDtoRecipe<unknown>> = {};
     const dtoFiles = listFileByDecorators(
       join(process.cwd(), 'dist'),
       ['CrudDto'],
@@ -27,7 +29,7 @@ export class CrudAutoloader {
     );
     this.autoload(
       dtoFiles,
-      (autoloaded, metadata) => {
+      (autoloaded, metadata: IDtoRecipeMetadata<any>) => {
         if (!loadedDtos[metadata.target.name]) {
           loadedDtos[metadata.target.name] = new DtoRecipe(metadata.target);
         }
@@ -39,9 +41,9 @@ export class CrudAutoloader {
     return loadedDtos;
   }
 
-  public static autoloadRecipes(): IDictionary<IEntityRecipe> {
+  public static autoloadRecipes(): IDictionary<IEntityRecipe<unknown>> {
     logger.log('Starting Recipes Autoload');
-    const loadedRecipes: IDictionary<IEntityRecipe> = {};
+    const loadedRecipes: IDictionary<IEntityRecipe<unknown>> = {};
     const recipeFiles = listFileByDecorators(
       join(process.cwd(), 'dist'),
       ['CrudController', 'CrudService', 'CrudRepository', 'CrudProfile'],
@@ -49,7 +51,7 @@ export class CrudAutoloader {
     );
     this.autoload(
       recipeFiles,
-      (autoloaded, metadata) => {
+      (autoloaded, metadata: IEntityRecipeMetadata<any>) => {
         if (!loadedRecipes[metadata.target.name]) {
           loadedRecipes[metadata.target.name] = {};
         }
@@ -80,7 +82,10 @@ export class CrudAutoloader {
 
   private static autoload(
     actualFiles: string[],
-    itemAssignment: (autoloaded: Type<any>, metadata: IRecipeMetadata) => void,
+    itemAssignment: (
+      autoloaded: Type<any>,
+      metadata: IRecipeMetadata<any>,
+    ) => void,
     metadataKey: string,
   ) {
     const loadedModules = Object.entries(require.cache).filter(([key]) =>
@@ -109,7 +114,7 @@ export class CrudAutoloader {
         .forEach((item: Type<any>) => {
           if (!item) throw new Error('Module not loaded');
           if (Reflect.hasMetadata(metadataKey, item)) {
-            const metadata: IRecipeMetadata = Reflect.getMetadata(
+            const metadata: IRecipeMetadata<unknown> = Reflect.getMetadata(
               metadataKey,
               item,
             );

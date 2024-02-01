@@ -21,36 +21,17 @@ export interface ICrudAutoModuleOptions extends IAutoCrudOptions {
   crudProfileFor?: <Entity>(target: Type<Entity>) => Type<AutomapperProfile>;
   crudServiceFor?: <
     Entity,
-    TRepository extends ICrudRepository<Entity> = ICrudRepository<Entity>,
-    CreateDto = any,
-    UpdateDto extends DeepPartial<Entity> = any,
+    K extends string | number | symbol = 'id',
+    CreateDto = Omit<Entity, K>,
+    UpdateDto extends DeepPartial<Entity> = DeepPartial<Entity>,
     ReturnDto = Entity,
     PaginatedResultDto extends IPaginatedResult<ReturnDto> = IPaginatedResult<ReturnDto>,
   >(
     target: Type<Entity>,
   ) => Type<
-    ICrudService<Entity, CreateDto, UpdateDto, ReturnDto, PaginatedResultDto>
+    ICrudService<Entity, K, CreateDto, UpdateDto, ReturnDto, PaginatedResultDto>
   >;
-  crudControllerFor?: <
-    Entity,
-    CreateDto = any,
-    UpdateDto extends DeepPartial<Entity> = any,
-    ReturnDto = Entity,
-    PaginatedResultDto extends IPaginatedResult<ReturnDto> = IPaginatedResult<ReturnDto>,
-    Service extends ICrudService<
-      Entity,
-      CreateDto,
-      UpdateDto,
-      ReturnDto,
-      PaginatedResultDto
-    > = ICrudService<
-      Entity,
-      CreateDto,
-      UpdateDto,
-      ReturnDto,
-      PaginatedResultDto
-    >,
-  >(
+  crudControllerFor?: <Entity>(
     target: Type<Entity>,
     endpointsRecipe?: IEndpointsRecipe,
   ) => Type<any>;

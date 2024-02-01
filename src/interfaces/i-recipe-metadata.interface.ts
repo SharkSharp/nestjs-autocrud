@@ -1,6 +1,6 @@
 import { Type } from '@nestjs/common';
 
-export interface IRecipeMetadata {
+export interface IRecipeMetadata<Entity> {
   prop?: string;
-  target: Type<any>;
+  target: Type<Entity>;
 }

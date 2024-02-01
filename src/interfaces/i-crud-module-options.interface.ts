@@ -17,16 +17,19 @@ export interface IAutoCrudOptions<
 }
 
 export interface IEntityAutoCrudOptions<
+  Entity,
   EndpointsRecipe extends IEndpointsRecipe = IEndpointsRecipe,
 > extends IAutoCrudOptions<EndpointsRecipe> {
-  entity: Type<any>;
+  entity: Type<Entity>;
 }
 export const isEntityAutoModuleOptions = <
   EndpointsRecipe extends IEndpointsRecipe = IEndpointsRecipe,
 >(
-  obj: any,
+  obj: unknown,
 ): obj is IEntityAutoCrudOptions<EndpointsRecipe> => {
-  return obj && obj.entity;
+  return (
+    obj && (obj as IEntityAutoCrudOptions<EndpointsRecipe>).entity !== undefined
+  );
 };
 export interface ICrudModuleOptions<
   EndpointsRecipe extends IEndpointsRecipe = IEndpointsRecipe,
