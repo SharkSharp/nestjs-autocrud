@@ -12,6 +12,7 @@ export enum ApiLayers {
 export interface IAutoCrudOptions<
   EndpointsRecipe extends IEndpointsRecipe = IEndpointsRecipe,
 > {
+  ormRequired?: boolean;
   apiLayer?: ApiLayers;
   endpointsRecipe?: EndpointsRecipe;
 }
