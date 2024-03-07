@@ -237,7 +237,7 @@ export class CrudAutoModule {
     target: Type<any>,
   ): Promise<ClassProvider | null> {
     const recipe = this.recipeFor(target);
-    if (!recipe?.options?.noRepository && !recipe?.options?.noService)
+    if (recipe?.options?.noRepository || recipe?.options?.noService)
       return null;
     const mopduleOptions = await this.moduleOptions;
     const repositoryType =
@@ -251,7 +251,7 @@ export class CrudAutoModule {
     target: Type<any>,
   ): Promise<ClassProvider | null> {
     const recipe = this.recipeFor(target);
-    if (!recipe?.options?.noService) return null;
+    if (recipe?.options?.noService) return null;
     const moduleOptions = await this.moduleOptions;
     const serviceType =
       this.recipeFor(target)?.service ??
@@ -262,7 +262,7 @@ export class CrudAutoModule {
 
   private static async profileFor(target: Type<any>) {
     const recipe = this.recipeFor(target);
-    if (!recipe?.options?.noService) return null;
+    if (recipe?.options?.noService) return null;
     const moduleOptions = await this.moduleOptions;
     const profileClass =
       this.recipeFor(target)?.mapperProfile ??
