@@ -244,7 +244,7 @@ export class CrudAutoModule {
       this.recipeFor(target)?.repository ??
       (this.recipeFor(target).repository =
         mopduleOptions.crudRepositoryFor(target));
-    return crudRepositoryProviderFor(repositoryType);
+    return crudRepositoryProviderFor(target, repositoryType);
   }
 
   private static async serviceFor(
@@ -257,7 +257,7 @@ export class CrudAutoModule {
       this.recipeFor(target)?.service ??
       (this.recipeFor(target).service =
         moduleOptions.crudServiceFor?.(target) ?? crudServiceFor(target));
-    return crudServiceProviderFor(serviceType);
+    return crudServiceProviderFor(target, serviceType);
   }
 
   private static async profileFor(target: Type<any>) {

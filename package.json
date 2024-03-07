@@ -1,6 +1,6 @@
 {
   "name": "nestjs-autocrud",
-  "version": "0.1.5",
+  "version": "0.1.7",
   "description": "",
   "author": "Arthur Frederico Neves",
   "main": "dist/index.js",
