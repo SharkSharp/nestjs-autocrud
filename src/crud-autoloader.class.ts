@@ -56,6 +56,12 @@ export class CrudAutoloader {
           loadedRecipes[metadata.target.name] = {};
         }
         loadedRecipes[metadata.target.name][metadata.prop] = autoloaded;
+        if (metadata.options) {
+          loadedRecipes[metadata.target.name].options = {
+            ...loadedRecipes[metadata.target.name].options,
+            ...metadata.options,
+          };
+        }
       },
       CRUD_ENTITY_RECIPE,
     );

@@ -5,3 +5,8 @@ export const crudServiceNameFor = <Entity>(target: Type<Entity>): string =>
 
 export const InjectCrudService = (entity: Type<any>) =>
   Inject(crudServiceNameFor(entity));
+
+export const crudServiceProviderFor = <Entity>(target: Type<Entity>) => ({
+  provide: crudServiceNameFor(target),
+  useClass: target,
+});

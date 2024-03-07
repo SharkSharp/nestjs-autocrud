@@ -4,8 +4,8 @@ import { crudProfileFor } from '@/crud.profile';
 import { crudServiceFor } from '@/crud.service';
 import { DtoRecipe } from '@/dto-recipe.class';
 import { MODULE_REF } from '@Decorators/crud-module.decorator';
-import { crudRepositoryNameFor } from '@Decorators/inject-crud-repository.decorator';
-import { crudServiceNameFor } from '@Decorators/inject-crud-service.decorator';
+import { crudRepositoryProviderFor } from '@Decorators/inject-crud-repository.decorator';
+import { crudServiceProviderFor } from '@Decorators/inject-crud-service.decorator';
 import { DeepPartial } from '@Helpers/mapped-types';
 import { ICrudAutoModuleOptions } from '@Interfaces/i-crud-auto-module-options.interface';
 import {
@@ -19,7 +19,7 @@ import { IDtoRecipe } from '@Interfaces/i-dto-recipe.interface';
 import { IEndpointsRecipe } from '@Interfaces/i-endpoints-recipe.interface';
 import { IEntityRecipe } from '@Interfaces/i-entity-recipe.interface';
 import { IPaginatedResult } from '@Interfaces/i-paginated-result.interface';
-import { DynamicModule, Module, Type } from '@nestjs/common';
+import { ClassProvider, DynamicModule, Module, Type } from '@nestjs/common';
 
 @Module({})
 export class CrudAutoModule {
@@ -108,38 +108,37 @@ export class CrudAutoModule {
     providers = [],
     moduleRef,
   }: ICrudAutoModuleForFeatureOptions): Promise<DynamicModule> {
-    const currentOptions = await this.moduleOptions;
+    const moduleOptions = await this.moduleOptions;
     const builtEntities = entities.map((entity) =>
       isEntityAutoModuleOptions(entity)
         ? entity
         : <IEntityAutoCrudOptions<unknown>>{
             entity,
-            apiLayer: apiLayer ?? currentOptions.apiLayer,
+            apiLayer: apiLayer ?? moduleOptions.apiLayer,
           },
     );
-    const rawEntities = builtEntities.map(({ entity }) => entity);
 
+    const [builtOrmModules, exportOrmModules] = await this.ormModulesFor(
+      builtEntities,
+    );
     const builtProviders = await this.providersFor(builtEntities);
     const builtProfiles = await this.profilesFor(builtEntities);
     const builtControllers = await this.controllersFor(
       builtEntities,
       endpointsRecipe,
+      moduleRef,
     );
-
-    builtControllers.forEach((controller) => {
-      Reflect.defineMetadata(MODULE_REF, moduleRef, controller);
-    });
 
     return {
       module: CrudAutoModule,
-      imports: [...imports, currentOptions.orm.ormModuleFor(rawEntities)],
+      imports: [...imports, ...builtOrmModules],
       providers: [...providers, ...builtProviders, ...builtProfiles],
       controllers: [...controllers, ...builtControllers],
       exports: [
         ...exports,
         ...builtProviders,
         ...builtProfiles,
-        currentOptions.orm.ormModule,
+        ...exportOrmModules,
       ],
     };
   }
@@ -161,89 +160,136 @@ export class CrudAutoModule {
     };
   }
 
+  private static async ormModulesFor(
+    targets: Array<IEntityAutoCrudOptions<unknown>>,
+  ) {
+    const moduleOptions = await this.moduleOptions;
+    const rawEntities = targets
+      .map(({ entity }) => entity)
+      .filter((entity) => {
+        const recipe = this.recipeFor(entity);
+        return (
+          !recipe?.options?.noOrm &&
+          !recipe?.options?.noRepository &&
+          !recipe?.options?.noService
+        );
+      });
+
+    if (rawEntities.length === 0) return [[], []];
+
+    return [
+      [moduleOptions.orm.ormModuleFor(rawEntities)],
+      [moduleOptions.orm.ormModule],
+    ];
+  }
+
   private static async providersFor(
     targets: Array<IEntityAutoCrudOptions<unknown>>,
   ) {
-    return await Promise.all(
-      targets.flatMap(({ entity }) => [
-        this.repositoryFor(entity),
-        this.serviceFor(entity),
-      ]),
-    );
+    return (
+      await Promise.all(
+        targets.flatMap(({ entity }) => [
+          this.repositoryFor(entity),
+          this.serviceFor(entity),
+        ]),
+      )
+    ).filter((providers) => providers !== null);
   }
 
   private static async profilesFor(
     targets: Array<IEntityAutoCrudOptions<unknown>>,
   ) {
-    return await Promise.all(
-      targets.map(({ entity }) => this.profileFor(entity)),
-    );
+    return (
+      await Promise.all(
+        targets.map(({ entity }) => {
+          return this.profileFor(entity);
+        }),
+      )
+    ).filter((profile) => profile !== null);
   }
 
   private static async controllersFor(
     targets: Array<IEntityAutoCrudOptions<unknown>>,
     moduleEndpointsRecipe: IEndpointsRecipe,
+    moduleRef: Type<any>,
   ) {
-    const currentOptions = await this.moduleOptions;
-    return await Promise.all(
-      targets.flatMap(({ entity, endpointsRecipe, apiLayer }) =>
-        apiLayer === undefined || apiLayer & ApiLayers.REST
-          ? this.controllerFor(entity, {
-              ...currentOptions.endpointsRecipe,
-              ...moduleEndpointsRecipe,
-              ...endpointsRecipe,
-            })
-          : [],
-      ),
-    );
-  }
-
-  private static async controllerFor(
-    target: Type<any>,
-    endpointsRecipe: IEndpointsRecipe,
-  ) {
-    const currentOptions = await this.moduleOptions;
+    const moduleOptions = await this.moduleOptions;
     return (
-      this.recipeFor(target)?.controller ??
-      (this.recipeFor(target).controller =
-        currentOptions.crudControllerFor?.(target, endpointsRecipe) ??
-        crudControllerFor(target, endpointsRecipe))
-    );
+      await Promise.all(
+        targets.map(({ endpointsRecipe, ...target }) =>
+          this.controllerFor(
+            {
+              endpointsRecipe: {
+                ...moduleOptions.endpointsRecipe,
+                ...moduleEndpointsRecipe,
+                ...endpointsRecipe,
+              },
+              ...target,
+            },
+            moduleRef,
+          ),
+        ),
+      )
+    ).filter((controller) => controller !== null);
   }
 
-  private static async repositoryFor(target: Type<any>) {
-    const currentOptions = await this.moduleOptions;
+  private static async repositoryFor(
+    target: Type<any>,
+  ): Promise<ClassProvider | null> {
+    const recipe = this.recipeFor(target);
+    if (!recipe?.options?.noRepository && !recipe?.options?.noService)
+      return null;
+    const mopduleOptions = await this.moduleOptions;
     const repositoryType =
       this.recipeFor(target)?.repository ??
       (this.recipeFor(target).repository =
-        currentOptions.crudRepositoryFor(target));
-    return {
-      provide: crudRepositoryNameFor(target),
-      useClass: repositoryType,
-    };
+        mopduleOptions.crudRepositoryFor(target));
+    return crudRepositoryProviderFor(repositoryType);
   }
 
-  private static async serviceFor(target: Type<any>) {
-    const currentOptions = await this.moduleOptions;
+  private static async serviceFor(
+    target: Type<any>,
+  ): Promise<ClassProvider | null> {
+    const recipe = this.recipeFor(target);
+    if (!recipe?.options?.noService) return null;
+    const moduleOptions = await this.moduleOptions;
     const serviceType =
       this.recipeFor(target)?.service ??
       (this.recipeFor(target).service =
-        currentOptions.crudServiceFor?.(target) ?? crudServiceFor(target));
-    return {
-      provide: crudServiceNameFor(target),
-      useClass: serviceType,
-    };
+        moduleOptions.crudServiceFor?.(target) ?? crudServiceFor(target));
+    return crudServiceProviderFor(serviceType);
   }
 
   private static async profileFor(target: Type<any>) {
-    const currentOptions = await this.moduleOptions;
+    const recipe = this.recipeFor(target);
+    if (!recipe?.options?.noService) return null;
+    const moduleOptions = await this.moduleOptions;
     const profileClass =
       this.recipeFor(target)?.mapperProfile ??
       (this.recipeFor(target).mapperProfile =
-        currentOptions.crudProfileFor?.(target) ?? crudProfileFor(target));
+        moduleOptions.crudProfileFor?.(target) ?? crudProfileFor(target));
     return {
       provide: `CrudProfile<${target.name}>`,
       useClass: profileClass,
     };
+  }
+
+  private static async controllerFor(
+    {
+      entity: target,
+      apiLayer,
+      endpointsRecipe,
+    }: IEntityAutoCrudOptions<unknown>,
+    moduleRef: Type<any>,
+  ): Promise<Type<any> | null> {
+    const moduleOptions = await this.moduleOptions;
+    if (apiLayer && !(apiLayer & ApiLayers.REST)) return null;
+    const controller =
+      this.recipeFor(target)?.controller ??
+      (this.recipeFor(target).controller =
+        moduleOptions.crudControllerFor?.(target, endpointsRecipe) ??
+        crudControllerFor(target, endpointsRecipe));
+    Reflect.defineMetadata(MODULE_REF, moduleRef, controller);
+    return controller;
   }
 }

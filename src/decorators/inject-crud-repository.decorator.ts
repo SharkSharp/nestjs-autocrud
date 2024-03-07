@@ -5,3 +5,8 @@ export const crudRepositoryNameFor = <Entity>(target: Type<Entity>): string =>
 
 export const InjectCrudRepository = (entity: Type<any>) =>
   Inject(crudRepositoryNameFor(entity));
+
+export const crudRepositoryProviderFor = <Entity>(target: Type<Entity>) => ({
+  provide: crudRepositoryNameFor(target),
+  useClass: target,
+});
