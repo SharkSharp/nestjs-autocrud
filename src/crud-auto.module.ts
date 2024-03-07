@@ -41,7 +41,6 @@ export class CrudAutoModule {
             },
             crudRepositoryFor: null,
             orm: null,
-            ormRequired: null,
             ...options,
           })),
     ) as Promise<ICrudAutoModuleOptions>;
@@ -108,7 +107,6 @@ export class CrudAutoModule {
     controllers = [],
     providers = [],
     moduleRef,
-    ormRequired,
   }: ICrudAutoModuleForFeatureOptions): Promise<DynamicModule> {
     const currentOptions = await this.moduleOptions;
     const builtEntities = entities.map((entity) =>
@@ -119,20 +117,7 @@ export class CrudAutoModule {
             apiLayer: apiLayer ?? currentOptions.apiLayer,
           },
     );
-
-    const ormRequiredEntities = builtEntities
-      .filter(
-        ({ ormRequired: entityOrmRequired }) =>
-          entityOrmRequired ??
-          ormRequired ??
-          currentOptions.ormRequired ??
-          true,
-      )
-      .map(({ entity }) => entity);
-
-    if (ormRequiredEntities.length > 0 && currentOptions.orm.ormModuleFor) {
-      imports.push(currentOptions.orm.ormModuleFor(ormRequiredEntities));
-    }
+    const rawEntities = builtEntities.map(({ entity }) => entity);
 
     const builtProviders = await this.providersFor(builtEntities);
     const builtProfiles = await this.profilesFor(builtEntities);
@@ -147,7 +132,7 @@ export class CrudAutoModule {
 
     return {
       module: CrudAutoModule,
-      imports,
+      imports: [...imports, currentOptions.orm.ormModuleFor(rawEntities)],
       providers: [...providers, ...builtProviders, ...builtProfiles],
       controllers: [...controllers, ...builtControllers],
       exports: [
